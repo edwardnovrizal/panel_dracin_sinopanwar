@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: {
-    NEXT_PUBLIC_ADMIN_API_BASE: process.env.BASE_URL
+    NEXT_PUBLIC_ADMIN_API_BASE: process.env.ADMIN_API_BASE
+      ? process.env.ADMIN_API_BASE
+      : process.env.BASE_URL
       ? `${process.env.BASE_URL}/api/admin`
       : undefined,
     NEXT_PUBLIC_BASE_URL: process.env.BASE_URL,
