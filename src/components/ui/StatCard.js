@@ -2,13 +2,14 @@
 
 import Icon from "./Icon";
 
-export function StatCard({ title, value, delta, deltaDirection = "up", hint, icon, className = "", status }) {
+export function StatCard({ title, value, delta, deltaDirection = "up", hint, icon, className = "", status, size = "md" }) {
   const deltaColor =
     delta == null
       ? "text-zinc-500"
       : deltaDirection === "down"
       ? "text-red-600"
       : "text-emerald-600";
+  const valueSizeClass = size === "sm" ? "text-base font-medium" : "text-2xl font-semibold";
   return (
     <div className={`rounded-2xl border border-black/10 bg-white p-5 shadow-sm ${className}`}>
       <div className="flex items-center justify-between">
@@ -40,7 +41,7 @@ export function StatCard({ title, value, delta, deltaDirection = "up", hint, ico
         </div>
       </div>
       {value != null && value !== "" && (
-        <div className="mt-2 text-2xl font-semibold tracking-tight tabular-nums text-black">{value}</div>
+        <div className={`mt-2 ${valueSizeClass} tracking-tight tabular-nums text-black`}>{value}</div>
       )}
       {hint && <div className="mt-1 text-xs text-zinc-600">{hint}</div>}
     </div>

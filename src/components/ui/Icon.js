@@ -103,6 +103,15 @@ export default function Icon({ name, size = 16, className = "" }) {
       </svg>
     );
   }
+  if (name === "eye-off") {
+    return (
+      <svg {...props}>
+        <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" fill="none" />
+        <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    );
+  }
   if (name === "edit") {
     return (
       <svg {...props}>
@@ -122,6 +131,15 @@ export default function Icon({ name, size = 16, className = "" }) {
     return (
       <svg {...props}>
         <circle cx="12" cy="12" r="4" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (name === "link") {
+    return (
+      <svg {...props}>
+        <path d="M10 14l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M7 17a4 4 0 0 1 0-6l3-3a4 4 0 0 1 6 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M17 7a4 4 0 0 1 0 6l-3 3a4 4 0 0 1-6 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
   }

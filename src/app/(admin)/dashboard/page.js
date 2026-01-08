@@ -3,9 +3,16 @@
 import { BarChart } from "@/components/ui/BarChart";
 import { Card } from "@/components/ui/Card";
 import { DonutChart } from "@/components/ui/DonutChart";
+import Icon from "@/components/ui/Icon";
 import { StatCard } from "@/components/ui/StatCard";
 import {
+  fetchAppAnnounce,
+  fetchAppAnnounces,
   fetchAppConfig,
+  fetchAppNotification,
+  fetchAppNotifications,
+  fetchAppRedirect,
+  fetchAppRedirects,
   fetchContentStats,
   fetchEpisodesRecent,
   fetchEpisodesSizeAggregate,
@@ -17,7 +24,8 @@ import {
   fetchSeriesDetail,
   fetchSeriesRecent,
   fetchTagUsageTop,
-  fetchTopPaymentUsersStats
+  fetchTopPaymentUsersStats,
+  fetchUser
 } from "@/lib/api";
 import { useEffect, useState } from "react";
 
@@ -27,6 +35,12 @@ function formatAmount(n) {
   } catch {
     return String(n);
   }
+}
+
+function shortText(s, n = 80) {
+  if (!s) return "";
+  const str = String(s);
+  return str.length > n ? `${str.slice(0, n - 1)}…` : str;
 }
 
 export default function DashboardPage() {
@@ -47,8 +61,12 @@ export default function DashboardPage() {
   const [newUsersTrend, setNewUsersTrend] = useState([]);
   const [episodesSizeAgg, setEpisodesSizeAgg] = useState([]);
   const [topUsers, setTopUsers] = useState([]);
+  const [topUserLabelMap, setTopUserLabelMap] = useState({});
   const [seriesNameMap, setSeriesNameMap] = useState({});
   const [appConfig, setAppConfig] = useState(null);
+  const [notifItem, setNotifItem] = useState(null);
+  const [redirectItem, setRedirectItem] = useState(null);
+  const [announceItem, setAnnounceItem] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -100,6 +118,8 @@ export default function DashboardPage() {
         setNewUsersTrend(uTrend?.data || []);
         setEpisodesSizeAgg(eSizeAgg?.data || []);
         const tData = tUsers?.data?.rows || tUsers?.data || [];
+        console.log(tData);
+        
         setTopUsers(tData);
         setAppConfig(cfg?.data || null);
         const os = s?.data?.orders || {};
@@ -118,6 +138,97 @@ export default function DashboardPage() {
     };
     load();
   }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      const rows = Array.isArray(topUsers) ? topUsers : [];
+      const ids = rows
+        .map((u) => u?.user?.id || u?.user_id || u?.id)
+        .filter((id) => !!id)
+        .filter((id) => topUserLabelMap[id] == null);
+      if (ids.length === 0) return;
+      try {
+        const pairs = await Promise.all(
+          ids.map(async (id) => {
+            try {
+              const json = await fetchUser(id);
+              const usr = json?.data;
+              const label = usr?.email || usr?.display_name || id;
+              return [id, label];
+            } catch {
+              return [id, id];
+            }
+          })
+        );
+        const next = { ...topUserLabelMap };
+        pairs.forEach(([id, label]) => {
+          next[id] = label;
+        });
+        setTopUserLabelMap(next);
+      } catch {}
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topUsers]);
+
+  useEffect(() => {
+    const load = async () => {
+      const nId = appConfig?.notification?.id;
+      const rId = appConfig?.redirect?.id;
+      const aId = appConfig?.announce?.id;
+      try {
+        if (nId) {
+          let item = null;
+          try {
+            const res = await fetchAppNotification(nId);
+            item = res?.data || null;
+          } catch {}
+          if (!item) {
+            try {
+              const list = await fetchAppNotifications({ page: 1, per_page: 100 });
+              item = (list?.data || []).find((it) => it?.id === nId) || null;
+            } catch {}
+          }
+          setNotifItem(item);
+        } else {
+          setNotifItem(null);
+        }
+        if (rId) {
+          let item = null;
+          try {
+            const res = await fetchAppRedirect(rId);
+            item = res?.data || null;
+          } catch {}
+          if (!item) {
+            try {
+              const list = await fetchAppRedirects({ page: 1, per_page: 100 });
+              item = (list?.data || []).find((it) => it?.id === rId) || null;
+            } catch {}
+          }
+          setRedirectItem(item);
+        } else {
+          setRedirectItem(null);
+        }
+        if (aId) {
+          let item = null;
+          try {
+            const res = await fetchAppAnnounce(aId);
+            item = res?.data || null;
+          } catch {}
+          if (!item) {
+            try {
+              const list = await fetchAppAnnounces({ page: 1, per_page: 100 });
+              item = (list?.data || []).find((it) => it?.id === aId) || null;
+            } catch {}
+          }
+          setAnnounceItem(item);
+        } else {
+          setAnnounceItem(null);
+        }
+      } catch {}
+    };
+    load();
+  }, [appConfig?.notification?.id, appConfig?.redirect?.id, appConfig?.announce?.id]);
 
   useEffect(() => {
     const loadNames = async () => {
@@ -207,22 +318,107 @@ export default function DashboardPage() {
               title="Notification"
               icon="dot"
               status={appConfig?.notification?.isEnable === true}
-              value={null}
-              hint={appConfig?.notification?.id || null}
+              size="sm"
+              className="border-[#6D4AFF]/15 transition hover:border-[#6D4AFF]/30 hover:bg-[#F8F7FF]"
+              value={
+                notifItem ? (
+                  <div className="flex items-center gap-2">
+                    <span>{notifItem?.unit_name || notifItem?.title || notifItem?.id}</span>
+                    {notifItem?.url && (
+                      <a
+                        href={notifItem.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center rounded-full bg-[#F0EFFF] px-2.5 py-[2px] text-[11px] text-[#6D4AFF]"
+                      >
+                        <span className="mr-1">
+                          <Icon name="link" size={12} />
+                        </span>
+                        Link
+                      </a>
+                    )}
+                  </div>
+                ) : null
+              }
+              hint={
+                (() => {
+                  const url = notifItem?.url || null;
+                  const desc = notifItem?.unit_description || null;
+                  return (
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      {desc && (
+                        <span className="text-[12px] text-zinc-700">{shortText(desc, 64)}</span>
+                      )}
+                    </div>
+                  );
+                })()
+              }
             />
             <StatCard
               title="Redirect"
               icon="dot"
               status={appConfig?.redirect?.isEnable === true}
-              value={null}
-              hint={appConfig?.redirect?.id || null}
+              size="sm"
+              className="border-[#6D4AFF]/15 transition hover:border-[#6D4AFF]/30 hover:bg-[#F8F7FF]"
+              value={
+                redirectItem ? (
+                  <div className="flex items-center gap-2">
+                    <span>{redirectItem?.title || redirectItem?.unit_name || redirectItem?.id}</span>
+                    {redirectItem?.url && (
+                      <a
+                        href={redirectItem.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center rounded-full bg-[#F0EFFF] px-2.5 py-[2px] text-[11px] text-[#6D4AFF]"
+                      >
+                        <span className="mr-1">
+                          <Icon name="link" size={12} />
+                        </span>
+                        Link
+                      </a>
+                    )}
+                  </div>
+                ) : null
+              }
+              hint={
+                (() => {
+                  const url = redirectItem?.url || null;
+                  const desc = redirectItem?.description || null;
+                  return (
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      {desc && (
+                        <span className="text-[12px] text-zinc-700">{shortText(desc, 64)}</span>
+                      )}
+                    </div>
+                  );
+                })()
+              }
             />
             <StatCard
               title="Announce"
               icon="dot"
               status={appConfig?.announce?.isEnable === true}
-              value={null}
-              hint={appConfig?.announce?.id || null}
+              size="sm"
+              className="border-[#6D4AFF]/15 transition hover:border-[#6D4AFF]/30 hover:bg-[#F8F7FF]"
+              value={
+                announceItem
+                  ? (announceItem?.unit_name || announceItem?.id)
+                  : null
+              }
+              hint={
+                (() => {
+                  const content = announceItem?.content || null;
+                  return (
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      {content && (
+                        <span className="inline-flex items-center rounded-md border border-black/10 bg-zinc-50 px-2.5 py-[4px] text-[12px] text-zinc-700">
+                          {shortText(content, 80)}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()
+              }
             />
             <StatCard
               title="Ads"
@@ -410,7 +606,16 @@ export default function DashboardPage() {
                     {(topUsers || []).map((u, i) => (
                       <tr key={u?.user?.id || i} className="border-t border-black/5">
                         <td className="px-3 py-2 text-black">
-                          {u?.user?.display_name || u?.user?.email || u?.user?.id || "-"}
+                          {(() => {
+                            const id = u?.user?.id || u?.user_id || u?.id;
+                            const label =
+                              u?.user?.email ||
+                              u?.user?.display_name ||
+                              u?.email ||
+                              u?.display_name ||
+                              (id ? topUserLabelMap[id] : "");
+                            return label || "-";
+                          })()}
                         </td>
                         <td className="px-3 py-2">{formatAmount(u?.total_amount || 0)}</td>
                       </tr>

@@ -178,6 +178,10 @@ export function getCurrentUser() {
   return currentUser;
 }
 
+export function getAccessToken() {
+  return accessToken;
+}
+
 export async function fetchUsers(params = {}) {
   const usp = new URLSearchParams();
   if (params.page) usp.set("page", String(params.page));
@@ -873,6 +877,12 @@ export async function fetchAppNotifications(params = {}) {
   return json;
 }
 
+export async function fetchAppNotification(id) {
+  const { res, json } = await doFetchJSON(`/app/notifications/${id}`);
+  if (!res.ok || json?.code !== 200) throw new Error(json?.message || "Gagal memuat notification");
+  return json;
+}
+
 export async function createAppNotification(payload = {}) {
   const form = new FormData();
   form.append("unit_name", payload.unit_name);
@@ -916,6 +926,12 @@ export async function fetchAppRedirects(params = {}) {
   if (params.per_page) usp.set("per_page", String(params.per_page));
   const { res, json } = await doFetchJSON(`/app/redirects?${usp.toString()}`);
   if (!res.ok || json?.code !== 200) throw new Error(json?.message || "Gagal memuat redirects");
+  return json;
+}
+
+export async function fetchAppRedirect(id) {
+  const { res, json } = await doFetchJSON(`/app/redirects/${id}`);
+  if (!res.ok || json?.code !== 200) throw new Error(json?.message || "Gagal memuat redirect");
   return json;
 }
 
@@ -963,6 +979,12 @@ export async function fetchAppAnnounces(params = {}) {
   if (params.per_page) usp.set("per_page", String(params.per_page));
   const { res, json } = await doFetchJSON(`/app/announces?${usp.toString()}`);
   if (!res.ok || json?.code !== 200) throw new Error(json?.message || "Gagal memuat announces");
+  return json;
+}
+
+export async function fetchAppAnnounce(id) {
+  const { res, json } = await doFetchJSON(`/app/announces/${id}`);
+  if (!res.ok || json?.code !== 200) throw new Error(json?.message || "Gagal memuat announce");
   return json;
 }
 
@@ -1021,3 +1043,79 @@ export async function updateAppConfig(payload = {}) {
   if (!res.ok) throw new Error(json?.message || "Gagal memperbarui konfigurasi UI");
   return json;
 }
+
+export async function fetchAdminSettings() {
+  const { res, json } = await doFetchJSON(`/settings`);
+  if (!res.ok || json?.code !== 200) throw new Error(json?.message || "Gagal memuat settings");
+  return json;
+}
+
+export async function updateAdminSettings(payload = {}) {
+  const { res, json } = await doFetchJSON(`/settings`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok || !(json?.code === 200 || json?.code === 204)) throw new Error(json?.message || "Gagal memperbarui settings");
+  return json;
+}
+
+export async function getAdminSetting(key) {
+  const { res, json } = await doFetchJSON(`/settings/${encodeURIComponent(key)}`);
+  if (!res.ok || json?.code !== 200) throw new Error(json?.message || "Gagal memuat setting");
+  return json;
+}
+
+export async function upsertAdminSetting(key, value) {
+  const { res, json } = await doFetchJSON(`/settings/${encodeURIComponent(key)}`, {
+    method: "PUT",
+    body: JSON.stringify({ value }),
+  });
+  if (!res.ok || !(json?.code === 200 || json?.code === 204)) throw new Error(json?.message || "Gagal menyimpan setting");
+  return json;
+}
+
+export async function deleteAdminSetting(key) {
+  const { res, json } = await doFetchJSON(`/settings/${encodeURIComponent(key)}`, { method: "DELETE" });
+  if (!res.ok || !(json?.code === 200 || json?.code === 204)) throw new Error(json?.message || "Gagal menghapus setting");
+  return json;
+}
+
+export async function startScan(payload = {}) {
+  const body = {};
+  if (Array.isArray(payload.top_folders)) body.top_folders = payload.top_folders;
+  if (payload.batch_size != null) body.batch_size = payload.batch_size;
+  if (payload.pause_ms != null) body.pause_ms = payload.pause_ms;
+  if (payload.interval_ms != null) body.interval_ms = payload.interval_ms;
+  const { res, json } = await doFetchJSON(`/scan/start`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok || !(json?.code === 200 || json?.code === 204)) throw new Error(json?.message || "Gagal memulai scan");
+  return json;
+}
+
+export async function stopScan() {
+  const { res, json } = await doFetchJSON(`/scan/stop`, { method: "POST" });
+  if (!res.ok || !(json?.code === 200 || json?.code === 204)) throw new Error(json?.message || "Gagal menghentikan scan");
+  return json;
+}
+
+export async function fetchScanRealtime() {
+  const { res, json } = await doFetchJSON(`/scan/realtime`);
+  if (!res.ok || json?.code !== 200) throw new Error(json?.message || "Gagal memuat realtime");
+  return json;
+}
+
+export async function fetchScanReportCurrent() {
+  const { res, json } = await doFetchJSON(`/scan/report/current`);
+  if (!res.ok || json?.code !== 200) throw new Error(json?.message || "Gagal memuat laporan berjalan");
+  return json;
+}
+
+export async function fetchScanReportSummary() {
+  const { res, json } = await doFetchJSON(`/scan/report/summary`);
+  if (!res.ok || json?.code !== 200) throw new Error(json?.message || "Gagal memuat ringkasan database");
+  return json;
+}
+
+ 
